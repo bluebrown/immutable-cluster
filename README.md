@@ -36,7 +36,7 @@ If a instance has only a root volume attached, taking a a ebs snapshot of this v
 
 First we create a packer file with some information about the image we want to create. Important is to specify ansible as provisioner. It will execute the playbook locally on the temporary instance.
 
-```bash
+```go
 variable "aws_access_key" {
   sensitive = true
 }
@@ -153,4 +153,81 @@ $ aws ec2 describe-images --owner self --region eu-central-1
 
 Now we have our custom AMI in the eu-central-1 region. Next we will use terraform to deploy this image with the required infrastructure.
 
+We create 2 subnets in different availability zones and create a instance from the earlier created AMI.
+
+```go
 ...
+resource "aws_subnet" "a" {
+  vpc_id            = aws_vpc.packer.id
+  cidr_block        = "10.0.0.0/24"
+  availability_zone = "eu-central-1a"
+
+  tags = {
+    Name = "public subnet a"
+  }
+
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "b" {
+  vpc_id            = aws_vpc.packer.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "eu-central-1b"
+
+
+  tags = {
+    Name = "public subnet b"
+  }
+
+  map_public_ip_on_launch = true
+}
+
+
+resource "aws_instance" "web_a" {
+  ami           = var.ami_id
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.a.id
+  security_groups = [
+    aws_default_security_group.internal.id,
+    aws_security_group.web.id
+  ]
+  tags = {
+    Name = "nginx a"
+  }
+}
+
+resource "aws_instance" "web_b" {
+  ami           = var.ami_id
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.b.id
+  security_groups = [
+    aws_default_security_group.internal.id,
+    aws_security_group.web.id
+  ]
+  tags = {
+    Name = "nginx b"
+  }
+}
+...
+```
+
+## Load balancing
+
+Since the application is deployed cross zones, this has an impact on our loadbalancer design.  When using AWS loadbalancer, aws will deploy a instance of the loadbalancer in the specified availability zones of the given region or by default in all zones.
+
+A network loadbalancer will by default only forward traffic to the targets in its own region. Cross zone routing can be enabled but it will cost additional money as it counts as outbound traffic.
+
+The application loadbalancer will always route across all configured availability zones but AWS will not charge for the outbound traffic.
+
+When using the loadbalancer to serve a tls certificate, one can perform tls termination in order to reduce computation cost and configuration on the target instances. However, this is not advised when using cross zone routing.
+
+The loadbalancer instances itself are exposed via dns from Route 53. Route 53 performs DNS roudrobin to the loadbalancer and the loadbalancer forward the traffic in the configured manner to the targets.
+
+It can make sense to point A records directly to the target instances (DNS roundrobin) and skip the loadbalancer altogether. This would be the case when:
+
+- sophisticated routing based on layer 7 is not required
+- each instance serves its own certificate
+- the number of instances is relatively low
+- server side dns failover is available
+
+For example when a running low number of identical instances across more than 1 availability zone using a modern dns provider such as Route 53.

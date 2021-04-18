@@ -1,4 +1,4 @@
-# A Canonical DevOps Workflow
+# AWS DevOps Workflow with Packer and Terraform
 
 First a custom image is build with packer, using ansible as provisioner to apply configuration. Then terraform is used to provision infrastructure and create instances using the custom image within the created infrastructure.
 

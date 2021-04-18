@@ -1,0 +1,30 @@
+---
+- name: set up nginx
+
+  hosts: default
+  become: true
+
+  tasks:
+    - name: ensure extra repo is available
+      yum:
+        name: [amazon-linux-extras]
+        state: present
+
+    - name: enable nginx repo
+      shell: amazon-linux-extras enable nginx1
+
+    - name: yum-clean-metadata
+      command: yum clean metadata
+      args:
+        warn: no
+
+    - name: install nginx
+      yum:
+        name: [nginx]
+        state: latest
+
+    - name: enable and start nginx service
+      service:
+        name: nginx
+        state: restarted
+        enabled: true

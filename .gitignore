@@ -1,0 +1,6 @@
+*.pem
+*.auto.*.json
+*.terraform
+*.lock.*
+*.backup
+*.tfstate

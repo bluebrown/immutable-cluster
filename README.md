@@ -177,7 +177,7 @@ $ aws ec2 describe-images --owner self --region eu-central-1
 
 Now we have our custom AMI in the eu-central-1 region. Next we will use terraform to deploy this image together with the required infrastructure.
 
-![image of infrastructure with nlb](https://s3.us-west-2.amazonaws.com/us-west-2-aws-training/awsu-spl/spl-68/2.0.7.prod/images/diagram.png)
+![image of infrastructure with nlb](https://user-images.githubusercontent.com/39703898/115248770-e43a0d80-a11f-11eb-9601-7529e7ede7de.png)
 
 ```go
 variable "aws_access_key" {
@@ -494,15 +494,15 @@ Since the AMI and snapshot was not created with terraform, it wont be destroyed 
 #### Deregister Image
 ```
  aws ec2 deregister-image --image-id <your-ami-id>
- ```
+```
 
- #### Find the snapshot Id
+#### Find the snapshot Id
 
  ```
  aws ec2 describe-snapshots --owner self
  ```
 
- #### Delete snapshot
+#### Delete snapshot
 
  ```bash
  aws ec2 delete-snapshot --snapshot-id <your-snap-id>

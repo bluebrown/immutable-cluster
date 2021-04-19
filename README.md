@@ -1,4 +1,4 @@
-# Immutable Infrastructure in [AWS](https://aws.amazon.com/) with [Packer](https://www.packer.io/), [Ansible](https://www.ansible.com/) and [Terraform](https://www.terraform.io/)
+# Immutable Infrastructure inAWS with Packer, Ansible and Terraform
 
 > Immutable infrastructure is an approach to managing services and software deployments on IT resources wherein components are replaced rather than changed. An application or services is effectively redeployed each time any change occurs.
 
@@ -22,7 +22,7 @@ To follow along you need:
 - have [terraform](https://www.terraform.io/) installed
 - have the [AWS CLI](https://aws.amazon.com/cli/) version 2 installed
 
-## Creating a Custom Image
+## Creating a Custom Image with Packer
 
 > *If you are using a custom vpc, make sure to configure [Packer](https://www.packer.io/) to use a subnet with automatic public ip assignment and a route to the internet gateway.  
 
@@ -30,7 +30,7 @@ EBS snapshots are snapshots of single volumes of an instance. i.e. the root volu
 
 If a instance has only a root volume attached, taking an ebs snapshot of this volume and creating an AMI from the image are the same things.
 
-### [Packer](https://www.packer.io/) File
+### Packer File
 
 First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create. We specify [Ansible](https://www.ansible.com/) as provisioner. It will execute the playbook on the temporary instance to apply additional configuration.
 

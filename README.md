@@ -35,33 +35,36 @@ If a instance has only a root volume attached, taking an ebs snapshot of this vo
 First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create. We specify [Ansible](https://www.ansible.com/) as provisioner. It will execute the playbook on the temporary instance to apply additional configuration.
 
 ```go
-variable "[aws](https://aws.amazon.com/)_access_key" {
+variable "aws_access_key" {
   sensitive = true
 }
-variable "[aws](https://aws.amazon.com/)_secret_key" {
+variable "aws_secret_key" {
   sensitive = true
 }
 
 source "amazon-ebs" "example" {
-  access_key      = var.[aws](https://aws.amazon.com/)_access_key
-  secret_key      = var.[aws](https://aws.amazon.com/)_secret_key
+  access_key      = var.aws_access_key
+  secret_key      = var.aws_secret_key
   ssh_timeout     = "30s"
   region          = "eu-central-1"
-  source_ami      = "ami-0db9040eb3ab74509" // amazon linux 2
+  // amazon linux 2
+  source_ami      = "ami-0db9040eb3ab74509"
   ssh_username    = "ec2-user"
-  ami_name        = "[packer](https://www.packer.io/) nginx"
+  ami_name        = "packer nginx"
   instance_type   = "t2.micro"
-  skip_create_ami = false // set to true if you don't want to create an actual ami. Useful for development.
+  skip_create_ami = false
+
 }
 
 build {
   sources = [
     "source.amazon-ebs.example"
   ]
-  provisioner "[ansible](https://www.ansible.com/)" {
+  provisioner "ansible" {
     playbook_file = "playbook.yml"
   }
 }
+
 ```
 
 ### Ansible Playbook
@@ -366,9 +369,11 @@ resource "aws_lb" "tcp_lb" {
   name                             = "packer-nginx"
   internal                         = false
   load_balancer_type               = "network"
-  enable_cross_zone_load_balancing = true // extra charges for outboud traffic
+   // extra charges for outbound traffic
+  enable_cross_zone_load_balancing = true
+  // deploy in both subnets
   subnets = [
-    aws_subnet.a.id, // deploy in both subnets
+    aws_subnet.a.id, 
     aws_subnet.b.id
   ]
   tags = {

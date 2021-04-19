@@ -1,29 +1,3 @@
-variable "aws_access_key" {
-  sensitive = true
-}
-variable "aws_secret_key" {
-  sensitive = true
-}
-
-variable "ami_id" {
-  default = "ami-01cce7ac6df33f08e"
-}
-
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 3.0"
-    }
-  }
-}
-
-provider "aws" {
-  region     = "eu-central-1"
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
-}
-
 resource "aws_vpc" "packer" {
   cidr_block = "10.0.0.0/16"
   tags = {
@@ -77,31 +51,3 @@ resource "aws_subnet" "b" {
 
   map_public_ip_on_launch = true
 }
-
-
-resource "aws_instance" "web_a" {
-  ami           = var.ami_id
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.a.id
-  security_groups = [
-    aws_default_security_group.internal.id,
-    aws_security_group.web.id
-  ]
-  tags = {
-    Name = "nginx a"
-  }
-}
-
-resource "aws_instance" "web_b" {
-  ami           = var.ami_id
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.b.id
-  security_groups = [
-    aws_default_security_group.internal.id,
-    aws_security_group.web.id
-  ]
-  tags = {
-    Name = "nginx b"
-  }
-}
-

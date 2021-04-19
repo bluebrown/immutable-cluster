@@ -1,31 +1,12 @@
-variable "aws_access_key" {
-  sensitive = true
-}
-variable "aws_secret_key" {
-  sensitive = true
-}
-
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 3.0"
-    }
-  }
-}
-
-provider "aws" {
-  region     = "eu-central-1"
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
-}
-
-
 resource "aws_lb" "tcp_lb" {
-  name               = "packer-nginx"
-  internal           = false
-  load_balancer_type = "network"
-  subnets            = [aws_subnet.a.id, aws_subnet.b.id]
+  name                             = "packer-nginx"
+  internal                         = false
+  load_balancer_type               = "network"
+  enable_cross_zone_load_balancing = true // extra charges for outboud traffic
+  subnets = [
+    aws_subnet.a.id, // deploy in both subnets
+    aws_subnet.b.id
+  ]
   tags = {
     Environment = "public tcp loadbalancer"
   }

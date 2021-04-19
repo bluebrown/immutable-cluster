@@ -1,6 +1,14 @@
 # Immutable Infrastructure in AWS with Packer, Ansible and Terraform
 
-In this post, I will showcase one possible DevOps workflow to provision infrastructure and deploy application. I am going to use Packer, Ansible and Terraform. Additionally I will use the AWS CLI.
+> Immutable infrastructure is an approach to managing services and software deployments on IT resources wherein components are replaced rather than changed. An application or services is effectively redeployed each time any change occurs.
+
+In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. 
+
+Since the goal is to simply replace the instance on each application release, we want to create a machine image containing the application. This way we can swap out the whole instance quickly without further installation steps after provisioning. This is sometimes called a golden image. We are going to use Packer & Ansible for this.
+
+Further, we want to manage our infrastructure as code. Terraform is a good choice for this. It can create, change and destroy infrastructure remotely and keeps track of the current state of our system.
+
+ With a golden image and infrastructure as code, we can throw away the complete environment, in this case the vpc with instances, and create a new one withing minutes if we wish. Usually we only want to swap the instances though.
 
 ## Tools
 

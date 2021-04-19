@@ -17,14 +17,14 @@ Further, we want to manage our infrastructure as code. [Terraform](https://www.t
 To follow along you need:
 
 - an [AWS](https://aws.amazon.com/) account & access tokens
-- have [ansible](https://www.ansible.com/) installed
-- have [packer](https://www.packer.io/) installed
-- have [terraform](https://www.terraform.io/) installed
+- have [Ansible](https://www.ansible.com/) installed
+- have [Packer](https://www.packer.io/) installed
+- have [Terraform](https://www.terraform.io/) installed
 - have the [AWS CLI](https://aws.amazon.com/cli/) version 2 installed
 
 ## Creating a Custom Image with Packer
 
-> *If you are using a custom vpc, make sure to configure [Packer](https://www.packer.io/) to use a subnet with automatic public ip assignment and a route to the internet gateway.  
+**If you are using a custom vpc, make sure to configure [Packer](https://www.packer.io/) to use a subnet with automatic public ip assignment and a route to the internet gateway.**
 
 EBS snapshots are snapshots of single volumes of an instance. i.e. the root volume. AMI are conceptionally snapshots of instances while they are technically just a collection of all ebs snapshots of the instances volumes.
 

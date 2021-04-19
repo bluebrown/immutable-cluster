@@ -125,7 +125,7 @@ $ aws ec2 describe-images --owner self --region eu-central-1
             "Architecture": "x86_64",
             "CreationDate": "2021-04-18T00:00:05.000Z",
             "ImageId": "ami-01cce7ac6df33f08e",
-            "ImageLocation": "<your_account_id>/[packer](https://www.packer.io/) nginx",
+            "ImageLocation": "<your_account_id>/packer nginx",
             "ImageType": "machine",
             "Public": false,
             "OwnerId": "<your_account_id>",

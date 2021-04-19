@@ -4,37 +4,13 @@
 
 In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. 
 
+## The Recipe
+
 Since the goal is to simply replace the instance on each application release, we want to create a machine image containing the application. This way we can swap out the whole instance quickly without further installation steps after provisioning. This is sometimes called a golden image. We are going to use Packer & Ansible for this.
 
 Further, we want to manage our infrastructure as code. Terraform is a good choice for this. It can create, change and destroy infrastructure remotely and keeps track of the current state of our system.
 
- With a golden image and infrastructure as code, we can throw away the complete environment, in this case the vpc with instances, and create a new one withing minutes if we wish. Usually we only want to swap the instances though.
-
-## Tools
-
-### Terraform
-
-Terraform is great at provisioning infrastructure and keeping track of the state of this infrastructure. We may use Terraform to create a new VPC in AWS and add various gateways, security groups and other configuration. Terraform tracks the state in a lock file that can be source controlled.
-
-While terraform is great at creating resources, it isn't particularly great and configuring instances such as ec2 or droplets. Usually it wont wait until an instance is ready to be further configured. So if it is required to run some sort of script, after the instance was created, one has to resort to provisioners which should be avoided.
-
-The preferred solution is to have Terraform create the instances with a custom image that doesn't need any additional steps after instance creation.
-
-### Packer
-
-Packer is a tool to create images using various builders. For example one can create a simple virtualbox and run it locally. But also a number of cloud native builders is available such as AWS, Linode, Digital Ocean and so on. When using such a builder, packer will use the environment of this builder to create the image. For example, we can use packer to create an AMI in aws using a real ec2 instance as base.
-
-Packer allows to run a number of provisioners such as ansible and chef. These can be used to apply configuration to the base image before packaging it as new custom image.
-
-### Ansible
-
-Ansible can be used to apply repeatable configuration to one or more instance, local or remote. It is very useful to have in this stack as it can be integrated in packer to create custom images. Furthermore, it can be used to apply configuration to running instances in robust and consistent manner.
-
-<br>
-
-## The workflow 
-
-First a custom image is build with packer, using ansible as provisioner to apply configuration. Then terraform is used to provision infrastructure and create instances using the custom image within the created infrastructure.
+ With a golden image and infrastructure as code, we can throw away the complete environment, in this case the vpc with instances, and create a new one within minutes if we wish. Usually we only want to swap the instances though.
 
 ## Hands On
 

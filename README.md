@@ -1,14 +1,14 @@
-# Immutable Infrastructure in AWS with Packer, Ansible and Terraform
+# Immutable Infrastructure in [AWS](https://aws.amazon.com/) with [Packer](https://www.packer.io/), [Ansible](https://www.ansible.com/) and [Terraform](https://www.terraform.io/)
 
 > Immutable infrastructure is an approach to managing services and software deployments on IT resources wherein components are replaced rather than changed. An application or services is effectively redeployed each time any change occurs.
 
-In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. You can find the full working code in github https://github.com/bluebrown/packer-terraform-ha-cluster.
+In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. You can find the full working code in github https://github.com/bluebrown/immutable-cluster.
 
 ## The Recipe
 
-Since the goal is to simply replace the instance on each application release, we want to create a machine image containing the application. This way we can swap out the whole instance quickly without further installation steps after provisioning. This is sometimes called a golden image. We are going to use Packer & Ansible for this.
+Since the goal is to simply replace the instance on each application release, we want to create a machine image containing the application. This way we can swap out the whole instance quickly without further installation steps after provisioning. This is sometimes called a [golden image](https://opensource.com/article/19/7/what-golden-image). We are going to use [Packer](https://www.packer.io/) & [Ansible](https://www.ansible.com/) for this.
 
-Further, we want to manage our infrastructure as code. Terraform is a good choice for this. It can create, change and destroy infrastructure remotely and keeps track of the current state of our system.
+Further, we want to manage our infrastructure as code. [Terraform](https://www.terraform.io/) is a good choice for this. It can create, change and destroy infrastructure remotely and keeps track of the current state of our system.
 
  With a golden image and infrastructure as code, we can throw away the complete environment, in this case the vpc with instances, and create a new one within minutes if we wish. Usually we only want to swap the instances though.
 
@@ -16,40 +16,40 @@ Further, we want to manage our infrastructure as code. Terraform is a good choic
 
 To follow along you need:
 
-- an aws account & access tokens
-- have ansible installed
-- have packer installed
-- have terraform installed
-- have the aws cli version 2 installed
+- an [AWS](https://aws.amazon.com/) account & access tokens
+- have [ansible](https://www.ansible.com/) installed
+- have [packer](https://www.packer.io/) installed
+- have [terraform](https://www.terraform.io/) installed
+- have the [AWS CLI](https://aws.amazon.com/cli/) version 2 installed
 
 ## Creating a Custom Image
 
-> *If you are using a custom vpc, make sure to configure packer to use a subnet with automatic public ip assignment and a route to the internet gateway.  
+> *If you are using a custom vpc, make sure to configure [Packer](https://www.packer.io/) to use a subnet with automatic public ip assignment and a route to the internet gateway.  
 
 EBS snapshots are snapshots of single volumes of an instance. i.e. the root volume. AMI are conceptionally snapshots of instances while they are technically just a collection of all ebs snapshots of the instances volumes.
 
 If a instance has only a root volume attached, taking an ebs snapshot of this volume and creating an AMI from the image are the same things.
 
-### Packer File
+### [Packer](https://www.packer.io/) File
 
-First we create a packer file with some information about the image we want to create. We specify ansible as provisioner. It will execute the playbook on the temporary instance to apply additional configuration.
+First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create. We specify [Ansible](https://www.ansible.com/) as provisioner. It will execute the playbook on the temporary instance to apply additional configuration.
 
 ```go
-variable "aws_access_key" {
+variable "[aws](https://aws.amazon.com/)_access_key" {
   sensitive = true
 }
-variable "aws_secret_key" {
+variable "[aws](https://aws.amazon.com/)_secret_key" {
   sensitive = true
 }
 
 source "amazon-ebs" "example" {
-  access_key      = var.aws_access_key
-  secret_key      = var.aws_secret_key
+  access_key      = var.[aws](https://aws.amazon.com/)_access_key
+  secret_key      = var.[aws](https://aws.amazon.com/)_secret_key
   ssh_timeout     = "30s"
   region          = "eu-central-1"
   source_ami      = "ami-0db9040eb3ab74509" // amazon linux 2
   ssh_username    = "ec2-user"
-  ami_name        = "packer nginx"
+  ami_name        = "[packer](https://www.packer.io/) nginx"
   instance_type   = "t2.micro"
   skip_create_ami = false // set to true if you don't want to create an actual ami. Useful for development.
 }
@@ -58,7 +58,7 @@ build {
   sources = [
     "source.amazon-ebs.example"
   ]
-  provisioner "ansible" {
+  provisioner "[ansible](https://www.ansible.com/)" {
     playbook_file = "playbook.yml"
   }
 }
@@ -66,7 +66,7 @@ build {
 
 ### Ansible Playbook
 
-Once packer has created the temporary instance, we use ansible to apply additional configuration. For this example, we use the playbook to install and enable the nginx service. The result will be nginx serving the default page on port 80.
+Once [Packer](https://www.packer.io/) has created the temporary instance, we use [Ansible](https://www.ansible.com/) to apply additional configuration. For this example, we use the playbook to install and enable the nginx service. The result will be nginx serving the default page on port 80.
 
 ```yml
 ---
@@ -103,16 +103,16 @@ Once packer has created the temporary instance, we use ansible to apply addition
 
 ### Build
 
-With the 2 configuration files we can validate the input and build our custom ami in AWS.
+With the 2 configuration files we can validate the input and build our custom ami in [AWS](https://aws.amazon.com/).
 
-```
+```bash
 packer validate . 
 packer build .
 ```
 
 ### The AMI
 
-Once the process is completed, we can use the `aws-cli` to inspect the created ami and find the image id.
+Once the process is completed, we can use the [AWS CLI](https://aws.amazon.com/cli/) to inspect the created ami and find the image id.
 
 ```json
 $ aws ec2 describe-images --owner self --region eu-central-1
@@ -122,7 +122,7 @@ $ aws ec2 describe-images --owner self --region eu-central-1
             "Architecture": "x86_64",
             "CreationDate": "2021-04-18T00:00:05.000Z",
             "ImageId": "ami-01cce7ac6df33f08e",
-            "ImageLocation": "<your_account_id>/packer nginx",
+            "ImageLocation": "<your_account_id>/[packer](https://www.packer.io/) nginx",
             "ImageType": "machine",
             "Public": false,
             "OwnerId": "<your_account_id>",
@@ -143,7 +143,7 @@ $ aws ec2 describe-images --owner self --region eu-central-1
             ],
             "EnaSupport": true,
             "Hypervisor": "xen",
-            "Name": "packer nginx",
+            "Name": "[packer](https://www.packer.io/) nginx",
             "RootDeviceName": "/dev/xvda",
             "RootDeviceType": "ebs",
             "SriovNetSupport": "simple",
@@ -155,7 +155,7 @@ $ aws ec2 describe-images --owner self --region eu-central-1
 
 ## Deploying the Infrastructure with Terraform
 
-Now we have our custom AMI in the eu-central-1 region. Next we will use terraform to deploy this image together with the required infrastructure.
+Now we have our custom AMI in the eu-central-1 region. Next we will use [Terraform](https://www.terraform.io/) to deploy this image together with the required infrastructure.
 
 ![image of infrastructure with nlb](https://user-images.githubusercontent.com/39703898/115248770-e43a0d80-a11f-11eb-9601-7529e7ede7de.png)
 
@@ -184,6 +184,7 @@ provider "aws" {
   region     = "eu-central-1"
   access_key = var.aws_access_key
   secret_key = var.aws_secret_key
+}
 ```
 
 ### VPC
@@ -195,7 +196,7 @@ resource "aws_vpc" "packer" {
   cidr_block = "10.0.0.0/16"
   tags = {
     Name        = "packer"
-    Description = "sample vpc with 2 public subnets in 2 availability zones and a network loadbalancer for high availability"
+    Description = "sample vpc with 2 public subnets in 2 availability zones and a network loadblancer for high availability"
   }
 
 }
@@ -248,7 +249,7 @@ resource "aws_subnet" "b" {
 
 ### Security Groups
 
-We need to create the security groups as well
+We need to create the security groups as well.
 
 ```go
 resource "aws_default_security_group" "internal" {
@@ -337,11 +338,11 @@ resource "aws_instance" "web_b" {
 
 ### Load balancing
 
-Since the application is deployed cross zones, this has an impact on our loadbalancer design.  When using AWS loadbalancer, aws will deploy an instance of the loadbalancer in the specified availability zones of the given region or by default in all zones.
+Since the application is deployed cross zones, this has an impact on our loadbalancer design.  When using [AWS](https://aws.amazon.com/) loadbalancer, [AWS](https://aws.amazon.com/) will deploy an instance of the loadbalancer in the specified availability zones of the given region or by default in all zones.
 
 A Network Load Balancer (NLB) will by default only forward traffic to the targets in its own region. Cross zone routing can be enabled but it will cost additional money as cross regional routing counts as outbound traffic.
 
-The Application Load Balancer (ALB) will always route across all configured availability zones but AWS will not charge for the outbound traffic. It is generally more expensive and feature rich than a NLB though.
+The Application Load Balancer (ALB) will always route across all configured availability zones but [AWS](https://aws.amazon.com/) will not charge for the outbound traffic. It is generally more expensive and feature rich than a NLB though.
 
 When using the loadbalancer to serve a tls certificate, one can perform tls termination in order to reduce computation cost and configuration on the target instances. However, this is not advised when using cross zone routing.
 
@@ -354,18 +355,18 @@ It can make sense to point A records directly to the target instances (DNS round
 - the number of instances is relatively low
 - server side dns failover is available
 
-For example when a running low number of identical instances across more than 1 availability zone using a modern dns provider such as Route 53.
+For example when a running low number of identical instances across more than 1 availability zone using a modern dns provider such as `Route 53`.
 
 ### NLB
 
-For this example I will use a network loadbalancer with cross zone routing enabled.
+For this example I will use a network loadbalancer with *cross zone* routing enabled.
 
 ```go
 resource "aws_lb" "tcp_lb" {
   name                             = "packer-nginx"
   internal                         = false
   load_balancer_type               = "network"
-  enable_cross_zone_load_balancing = true // extra charges for outbound traffic
+  enable_cross_zone_load_balancing = true // extra charges for outboud traffic
   subnets = [
     aws_subnet.a.id, // deploy in both subnets
     aws_subnet.b.id
@@ -403,18 +404,17 @@ resource "aws_lb_target_group_attachment" "nginx_b" {
   target_id        = aws_instance.web_b.id
   port             = 80
 }
-
 ```
 
 ## Deploy
 
-Now we can deploy the infrastructure. Run terraform apply and confirm the prompt. The process will take a couple minutes until all the resources are created and ready.
+Now we can deploy the infrastructure. Run `terraform apply` and confirm the prompt. The process will take a couple minutes until all the resources are created and ready.
 
 ```
 $ terraform apply
 ```
 
-You can use `aws-cli` to see if the targets of the load balancer are health. 
+You can use [AWS CLI](https://aws.amazon.com/cli/) to see if the targets of the load balancer are health. 
 
 They may not be ready yet. If that is the case, just wait a couple minutes and check again.
 
@@ -457,7 +457,7 @@ http://packer-nginx-266ae005c3577db4.elb.eu-central-1.amazonaws.com
 
 You can now visit this url in your browser:
 
-![image](https://user-images.githubusercontent.com/39703898/115232775-05dec900-a10f-11eb-9670-fa773436e547.png)
+![nginx default web page](https://user-images.githubusercontent.com/39703898/115232775-05dec900-a10f-11eb-9670-fa773436e547.png)
 
 Thats it, we have deployed our application with high availability across 2 zones and balance the traffic with a network loadbalancer. We have our whole infrastructure as code which we can source control.
 
@@ -469,21 +469,21 @@ In order to avoid cost, lets remove all created resources.
 terraform destroy
 ```
 
-Since the AMI and snapshot was not created with terraform, it wont be destroyed by the former command. We are going to remove them via CLI.
+Since the AMI and snapshot was not created with [Terraform](https://www.terraform.io/), it wont be destroyed by the former command. We are going to remove them via CLI.
 
 ### Deregister Image
 ```
- aws ec2 deregister-image --image-id <your-ami-id>
+aws ec2 deregister-image --image-id <your-ami-id>
 ```
 
 ### Find the snapshot Id
 
- ```
- aws ec2 describe-snapshots --owner self
- ```
+```
+aws ec2 describe-snapshots --owner self
+```
 
 ### Delete snapshot
 
- ```bash
- aws ec2 delete-snapshot --snapshot-id <your-snap-id>
- ```
+```bash
+aws ec2 delete-snapshot --snapshot-id <your-snap-id>
+```

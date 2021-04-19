@@ -1,4 +1,4 @@
-# AWS DevOps Workflow with Packer and Terraform
+# Immutable Infrastructure in AWS with Packer, Ansible and Terraform
 
 In this post, I will showcase one possible DevOps workflow to provision infrastructure and deploy application. I am going to use Packer, Ansible and Terraform. Additionally I will use the AWS CLI.
 

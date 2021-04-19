@@ -30,6 +30,8 @@ First a custom image is build with packer, using ansible as provisioner to apply
 
 ## Hands On
 
+You can find the full working code in github https://github.com/bluebrown/packer-terraform-ha-cluster
+
 ### Prerequisites
 
 To follow along you need:
@@ -44,15 +46,13 @@ To follow along you need:
 
 > *If you are using a custom vpc, make sure to configure packer to use a subnet with automatic public ip assignment and a route to the internet gateway.  
 
-EBS snapshots are snapshots or single volumes of an instance. i.e. the root volume. AMI are conceptionally snapshots of instances while they are technically just a collection of all ebs snapshots of the instance.
+EBS snapshots are snapshots of single volumes of an instance. i.e. the root volume. AMI are conceptionally snapshots of instances while they are technically just a collection of all ebs snapshots of the instances volumes.
 
-If a instance has only a root volume attached, taking a a ebs snapshot of this volume and creating an AMI from the image are the same things.
+If a instance has only a root volume attached, taking an ebs snapshot of this volume and creating an AMI from the image are the same things.
 
 #### Packer File
 
 First we create a packer file with some information about the image we want to create. We specify ansible as provisioner. It will execute the playbook on the temporary instance to apply additional configuration.
-
-**For this to work smoothly its best to have a default vpc configured with a default subnet with auto assignment of public ips enabled.**
 
 ```go
 variable "aws_access_key" {
@@ -86,7 +86,7 @@ build {
 
 #### Ansible Playbook
 
-Once packer has created the temporary instance, we use ansible to apply additional configuration. For this example, we use the playbook to install and enable the nginx service. The result will be nginx serving the default nginx page on port 80.
+Once packer has created the temporary instance, we use ansible to apply additional configuration. For this example, we use the playbook to install and enable the nginx service. The result will be nginx serving the default page on port 80.
 
 ```yml
 ---
@@ -173,11 +173,11 @@ $ aws ec2 describe-images --owner self --region eu-central-1
 }
 ```
 
-> Don't forget to delete the created AMI and snapshot from the ec2 dashboard later, in order to avoid charges.*
-
 ### Deploying the Infrastructure with Terraform
 
-Now we have our custom AMI in the eu-central-1 region. Next we will use terraform to deploy this image with the required infrastructure.
+Now we have our custom AMI in the eu-central-1 region. Next we will use terraform to deploy this image together with the required infrastructure.
+
+![image of infrastructure with nlb](https://s3.us-west-2.amazonaws.com/us-west-2-aws-training/awsu-spl/spl-68/2.0.7.prod/images/diagram.png)
 
 ```go
 variable "aws_access_key" {

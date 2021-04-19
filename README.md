@@ -30,6 +30,16 @@ First a custom image is build with packer, using ansible as provisioner to apply
 
 ## Hands On
 
+### Prerequisites
+
+To follow along you need:
+
+- an aws account & access tokens
+- have ansible installed
+- have packer installed
+- have terraform installed
+- have the aws cli version 2 installed
+
 ### Creating a Custom Image
 
 > *If you are using a custom vpc, make sure to configure packer to use a subnet with automatic public ip assignment and a route to the internet gateway.  
@@ -116,8 +126,8 @@ Once packer has created the temporary instance, we use ansible to apply addition
 With the 2 configuration files we can validate the input and build our custom ami in AWS.
 
 ```
-packer validate ami.pkr.hcl && 
-packer build ami.pkr.hcl
+packer validate . 
+packer build .
 ```
 
 #### The AMI

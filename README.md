@@ -146,7 +146,7 @@ $ aws ec2 describe-images --owner self --region eu-central-1
             ],
             "EnaSupport": true,
             "Hypervisor": "xen",
-            "Name": "[packer](https://www.packer.io/) nginx",
+            "Name": "packer nginx",
             "RootDeviceName": "/dev/xvda",
             "RootDeviceType": "ebs",
             "SriovNetSupport": "simple",

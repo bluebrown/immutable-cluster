@@ -2,7 +2,7 @@
 
 > Immutable infrastructure is an approach to managing services and software deployments on IT resources wherein components are replaced rather than changed. An application or services is effectively redeployed each time any change occurs.
 
-In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. 
+In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. You can find the full working code in github https://github.com/bluebrown/packer-terraform-ha-cluster.
 
 ## The Recipe
 
@@ -12,11 +12,7 @@ Further, we want to manage our infrastructure as code. Terraform is a good choic
 
  With a golden image and infrastructure as code, we can throw away the complete environment, in this case the vpc with instances, and create a new one within minutes if we wish. Usually we only want to swap the instances though.
 
-## Hands On
-
-You can find the full working code in github https://github.com/bluebrown/packer-terraform-ha-cluster
-
-### Prerequisites
+## Prerequisites
 
 To follow along you need:
 
@@ -26,7 +22,7 @@ To follow along you need:
 - have terraform installed
 - have the aws cli version 2 installed
 
-### Creating a Custom Image
+## Creating a Custom Image
 
 > *If you are using a custom vpc, make sure to configure packer to use a subnet with automatic public ip assignment and a route to the internet gateway.  
 
@@ -34,7 +30,7 @@ EBS snapshots are snapshots of single volumes of an instance. i.e. the root volu
 
 If a instance has only a root volume attached, taking an ebs snapshot of this volume and creating an AMI from the image are the same things.
 
-#### Packer File
+### Packer File
 
 First we create a packer file with some information about the image we want to create. We specify ansible as provisioner. It will execute the playbook on the temporary instance to apply additional configuration.
 
@@ -68,7 +64,7 @@ build {
 }
 ```
 
-#### Ansible Playbook
+### Ansible Playbook
 
 Once packer has created the temporary instance, we use ansible to apply additional configuration. For this example, we use the playbook to install and enable the nginx service. The result will be nginx serving the default page on port 80.
 
@@ -105,7 +101,7 @@ Once packer has created the temporary instance, we use ansible to apply addition
         enabled: true
 ```
 
-#### Build
+### Build
 
 With the 2 configuration files we can validate the input and build our custom ami in AWS.
 
@@ -114,7 +110,7 @@ packer validate .
 packer build .
 ```
 
-#### The AMI
+### The AMI
 
 Once the process is completed, we can use the `aws-cli` to inspect the created ami and find the image id.
 
@@ -157,7 +153,7 @@ $ aws ec2 describe-images --owner self --region eu-central-1
 }
 ```
 
-### Deploying the Infrastructure with Terraform
+## Deploying the Infrastructure with Terraform
 
 Now we have our custom AMI in the eu-central-1 region. Next we will use terraform to deploy this image together with the required infrastructure.
 
@@ -190,7 +186,7 @@ provider "aws" {
   secret_key = var.aws_secret_key
 ```
 
-#### VPC
+### VPC
 
 We create a VPC with 2 subnets in different availability zones and create a instance from the earlier created AMI in each zone.
 
@@ -250,7 +246,7 @@ resource "aws_subnet" "b" {
 }
 ```
 
-#### Security Groups
+### Security Groups
 
 We need to create the security groups as well
 
@@ -307,7 +303,7 @@ resource "aws_security_group" "web" {
 }
 ```
 
-#### EC2 Instances
+### EC2 Instances
 
 Now the general vpc is setup. We have 2 subnets in 2 availability zones. We also have configured the security groups. Next lets declare 1 instance from our custom image in each subnet.
 
@@ -339,7 +335,7 @@ resource "aws_instance" "web_b" {
 }
 ```
 
-#### Load balancing
+### Load balancing
 
 Since the application is deployed cross zones, this has an impact on our loadbalancer design.  When using AWS loadbalancer, aws will deploy an instance of the loadbalancer in the specified availability zones of the given region or by default in all zones.
 
@@ -360,7 +356,7 @@ It can make sense to point A records directly to the target instances (DNS round
 
 For example when a running low number of identical instances across more than 1 availability zone using a modern dns provider such as Route 53.
 
-#### NLB
+### NLB
 
 For this example I will use a network loadbalancer with cross zone routing enabled.
 
@@ -410,7 +406,7 @@ resource "aws_lb_target_group_attachment" "nginx_b" {
 
 ```
 
-### Deploy
+## Deploy
 
 Now we can deploy the infrastructure. Run terraform apply and confirm the prompt. The process will take a couple minutes until all the resources are created and ready.
 
@@ -465,7 +461,7 @@ You can now visit this url in your browser:
 
 Thats it, we have deployed our application with high availability across 2 zones and balance the traffic with a network loadbalancer. We have our whole infrastructure as code which we can source control.
 
-### Cleaning Up
+## Cleaning Up
 
 In order to avoid cost, lets remove all created resources. 
 
@@ -475,18 +471,18 @@ terraform destroy
 
 Since the AMI and snapshot was not created with terraform, it wont be destroyed by the former command. We are going to remove them via CLI.
 
-#### Deregister Image
+### Deregister Image
 ```
  aws ec2 deregister-image --image-id <your-ami-id>
 ```
 
-#### Find the snapshot Id
+### Find the snapshot Id
 
  ```
  aws ec2 describe-snapshots --owner self
  ```
 
-#### Delete snapshot
+### Delete snapshot
 
  ```bash
  aws ec2 delete-snapshot --snapshot-id <your-snap-id>

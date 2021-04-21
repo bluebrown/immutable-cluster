@@ -444,14 +444,14 @@ $ aws elbv2 describe-target-health --target-group-arn "$arn"
 }
 ```
 
-Once the targets are marked as health we can visit the web page. Lets take the load balancer dns via cli
+Once the targets are marked as health we can visit the web page. Lets take the load balancer dns via cli.
 
 ```
 $ echo "http://$(aws elbv2 describe-load-balancers --name "packer-nginx" --query "LoadBalancers[0].DNSName" --output text)"
 http://packer-nginx-266ae005c3577db4.elb.eu-central-1.amazonaws.com
 ```
 
-You can now visit this url in your browser:
+You can now visit this url in your browser.
 
 ![nginx default web page](https://user-images.githubusercontent.com/39703898/115232775-05dec900-a10f-11eb-9670-fa773436e547.png)
 
@@ -487,10 +487,3 @@ aws ec2 describe-snapshots --owner self
 ```bash
 aws ec2 delete-snapshot --snapshot-id <your-snap-id>
 ```
-
-## Next Steps
-
-IF you want to take this example further, good next steps could be
-
-- logging
-- auto scaling groups

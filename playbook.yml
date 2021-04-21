@@ -23,8 +23,7 @@
         name: [nginx]
         state: latest
 
-    - name: enable and start nginx service
+    - name: enable nginx service
       service:
         name: nginx
-        state: restarted
         enabled: true

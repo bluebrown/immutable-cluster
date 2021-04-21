@@ -2,7 +2,7 @@ resource "aws_vpc" "packer" {
   cidr_block = "10.0.0.0/16"
   tags = {
     Name        = "packer"
-    Description = "sample vpc with 2 public subnets in 2 availability zones and a network loadblancer for high availability"
+    Description = "vpc with 2 public subnets in 2 availability zones and auto scaling group using an application loadbalancer and custom AMI"
   }
 
 }

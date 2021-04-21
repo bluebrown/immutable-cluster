@@ -26,13 +26,13 @@ To follow along you need:
 
 **If you are using a custom vpc, make sure to configure [Packer](https://www.packer.io/) to use a subnet with automatic public ip assignment and a route to the internet gateway.**
 
-EBS snapshots are snapshots of single volumes of an instance. i.e. the root volume. AMI are conceptionally snapshots of instances while they are technically just a collection of all ebs snapshots of the instances volumes.
-
-If a instance has only a root volume attached, taking an ebs snapshot of this volume and creating an AMI from the image are the same things.
-
 ### Packer File
 
-First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create. We specify [Ansible](https://www.ansible.com/) as provisioner. It will execute the playbook on the temporary instance to apply additional configuration.
+First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create. 
+
+Most importantly We specify the `region`. By default our `AMI` will only be available in this `region`.
+
+We specify [Ansible](https://www.ansible.com/) as provisioner. It will execute the `playbook` on the temporary instance to apply additional configuration.
 
 ```go
 variable "aws_access_key" {
@@ -69,7 +69,9 @@ build {
 
 ### Ansible Playbook
 
-Once [Packer](https://www.packer.io/) has created the temporary instance, we use [Ansible](https://www.ansible.com/) to apply additional configuration. For this example, we use the playbook to install and enable the nginx service. The result will be nginx serving the default page on port 80.
+Once [Packer](https://www.packer.io/) has created the temporary instance, we use [Ansible](https://www.ansible.com/) to apply additional configuration.
+
+The playbook tells ansible to install and enable the nginx service. The result will be `nginx` serving the default page on port 80 when the `instance` is booted.
 
 ```yml
 ---
@@ -97,16 +99,15 @@ Once [Packer](https://www.packer.io/) has created the temporary instance, we use
         name: [nginx]
         state: latest
 
-    - name: enable and start nginx service
+    - name: enable nginx service
       service:
         name: nginx
-        state: restarted
         enabled: true
 ```
 
 ### Build
 
-With the 2 configuration files we can validate the input and build our custom ami in [AWS](https://aws.amazon.com/).
+With the 2 configuration files we can validate the input and build our custom `AMI` in [AWS](https://aws.amazon.com/).
 
 ```bash
 packer validate . 
@@ -115,7 +116,7 @@ packer build .
 
 ### The AMI
 
-Once the process is completed, we can use the [AWS CLI](https://aws.amazon.com/cli/) to inspect the created ami and find the image id.
+Once the process is completed, we can use the [AWS CLI](https://aws.amazon.com/cli/) to inspect the created `AMI` and find the `ImageId`.
 
 ```json
 $ aws ec2 describe-images --owner self --region eu-central-1
@@ -158,9 +159,9 @@ $ aws ec2 describe-images --owner self --region eu-central-1
 
 ## Deploying the Infrastructure with Terraform
 
-Now we have our custom AMI in the eu-central-1 region. Next we will use [Terraform](https://www.terraform.io/) to deploy this image together with the required infrastructure.
+Now we have our custom `AMI` in the `eu-central-1` region. Next we will use [Terraform](https://www.terraform.io/) to deploy this image together with the required infrastructure.
 
-![image of infrastructure with nlb](https://user-images.githubusercontent.com/39703898/115248770-e43a0d80-a11f-11eb-9601-7529e7ede7de.png)
+![image of infrastructure with elb](https://user-images.githubusercontent.com/39703898/115515253-dc43b000-a27c-11eb-8c96-b7fd705b7a9f.png)
 
 ```go
 variable "aws_access_key" {
@@ -192,7 +193,7 @@ provider "aws" {
 
 ### VPC
 
-We create a VPC with 2 subnets in different availability zones and create a instance from the earlier created AMI in each zone.
+First we create a `VPC` with 2 `subnets` in different `availability zones`. 
 
 ```go
 resource "aws_vpc" "packer" {
@@ -252,7 +253,11 @@ resource "aws_subnet" "b" {
 
 ### Security Groups
 
-We need to create the security groups as well.
+Next, we create the `security groups`. 
+
+The default security group has only a reference to itself. It is used to allow traffic to flow between the `ALB` and its `targets`.
+
+The second `security group` is to allow tcp traffic from the public web to the `ALB` on port 80(HTTP).
 
 ```go
 resource "aws_default_security_group" "internal" {
@@ -307,109 +312,79 @@ resource "aws_security_group" "web" {
 }
 ```
 
-### EC2 Instances
-
-Now the general vpc is setup. We have 2 subnets in 2 availability zones. We also have configured the security groups. Next lets declare 1 instance from our custom image in each subnet.
-
-```go
-resource "aws_instance" "web_a" {
-  ami           = var.ami_id
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.a.id
-  security_groups = [
-    aws_default_security_group.internal.id,
-    aws_security_group.web.id
-  ]
-  tags = {
-    Name = "nginx a"
-  }
-}
-
-resource "aws_instance" "web_b" {
-  ami           = var.ami_id
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.b.id
-  security_groups = [
-    aws_default_security_group.internal.id,
-    aws_security_group.web.id
-  ]
-  tags = {
-    Name = "nginx b"
-  }
-}
-```
 
 ### Load balancing
 
-Since the application is deployed cross zones, this has an impact on our loadbalancer design.  When using [AWS](https://aws.amazon.com/) loadbalancer, [AWS](https://aws.amazon.com/) will deploy an instance of the loadbalancer in the specified availability zones of the given region or by default in all zones.
-
-A Network Load Balancer (NLB) will by default only forward traffic to the targets in its own region. Cross zone routing can be enabled but it will cost additional money as cross regional routing counts as outbound traffic.
-
-The Application Load Balancer (ALB) will always route across all configured availability zones but [AWS](https://aws.amazon.com/) will not charge for the outbound traffic. It is generally more expensive and feature rich than a NLB though.
-
-When using the loadbalancer to serve a tls certificate, one can perform tls termination in order to reduce computation cost and configuration on the target instances. However, this is not advised when using cross zone routing.
-
-The loadbalancer instances itself are exposed via dns from Route 53. Route 53 performs DNS roudrobin to the loadbalancer and the loadbalancer forward the traffic in the configured manner to the targets.
-
-It can make sense to point A records directly to the target instances (DNS roundrobin) and skip the loadbalancer altogether. This would be the case when:
-
-- sophisticated routing based on layer 7 is not required
-- each instance serves its own certificate
-- the number of instances is relatively low
-- server side dns failover is available
-
-For example when a running low number of identical instances across more than 1 availability zone using a modern dns provider such as `Route 53`.
-
-### NLB
-
-For this example I will use a network loadbalancer with *cross zone* routing enabled.
+Next, an application load balancer (ALB) is created with a listener. This `ALB` will be used by the `auto scaling group` in the next section. 
 
 ```go
-resource "aws_lb" "tcp_lb" {
-  name                             = "packer-nginx"
-  internal                         = false
-  load_balancer_type               = "network"
-   // extra charges for outbound traffic
-  enable_cross_zone_load_balancing = true
-  // deploy in both subnets
+resource "aws_lb" "web" {
+  name               = "packer-terraform-example"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups = [
+    aws_default_security_group.internal.id,
+    aws_security_group.web.id,
+  ]
   subnets = [
-    aws_subnet.a.id, 
+    aws_subnet.a.id,
     aws_subnet.b.id
   ]
-  tags = {
-    Environment = "public tcp loadbalancer"
-  }
 }
 
-resource "aws_lb_target_group" "nginx" {
-  name     = "nginx-web"
+resource "aws_lb_target_group" "web" {
+  name     = "web-tg"
   port     = 80
-  protocol = "TCP"
+  protocol = "HTTP"
   vpc_id   = aws_vpc.packer.id
 }
 
+
 resource "aws_lb_listener" "web" {
-  load_balancer_arn = aws_lb.tcp_lb.arn
+  load_balancer_arn = aws_lb.web.arn
   port              = "80"
-  protocol          = "TCP"
+  protocol          = "HTTP"
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.nginx.arn
+    target_group_arn = aws_lb_target_group.web.arn
   }
 }
+```
 
-resource "aws_lb_target_group_attachment" "nginx_a" {
-  target_group_arn = aws_lb_target_group.nginx.arn
-  target_id        = aws_instance.web_a.id
-  port             = 80
+### Autoscaling
+
+Lastly, we create a launch template and auto scaling group to launch new instances of the custom `AMI`.
+
+
+```go
+resource "aws_placement_group" "web" {
+  name     = "web-pl"
+  strategy = "partition"
 }
 
-resource "aws_lb_target_group_attachment" "nginx_b" {
-  target_group_arn = aws_lb_target_group.nginx.arn
-  target_id        = aws_instance.web_b.id
-  port             = 80
+resource "aws_launch_template" "web" {
+  name_prefix   = "web-lt-"
+  image_id      = var.ami_id
+  instance_type = "t2.micro"
+  vpc_security_group_ids = [
+    aws_default_security_group.internal.id,
+  ]
+}
+
+resource "aws_autoscaling_group" "web" {
+  name                = "webscale"
+  vpc_zone_identifier = [aws_subnet.a.id, aws_subnet.b.id]
+  desired_capacity    = 2
+  max_size            = 4
+  min_size            = 2
+  placement_group     = aws_placement_group.web.id
+  target_group_arns   = [aws_lb_target_group.web.arn]
+  launch_template {
+    id = aws_launch_template.web.id
+  }
 }
 ```
+
 
 ## Deploy
 
@@ -425,7 +400,7 @@ They may not be ready yet. If that is the case, just wait a couple minutes and c
 
 
 ```bash
-$ arn=$(aws elbv2 describe-target-groups --name nginx-web --query "TargetGroups[0].TargetGroupArn" --output text)
+$ arn=$(aws elbv2 describe-target-groups --name web-tg --query "TargetGroups[0].TargetGroupArn" --output text)
 $ aws elbv2 describe-target-health --target-group-arn "$arn"
 {
     "TargetHealthDescriptions": [
@@ -492,3 +467,10 @@ aws ec2 describe-snapshots --owner self
 ```bash
 aws ec2 delete-snapshot --snapshot-id <your-snap-id>
 ```
+
+## Next Steps
+
+IF you want to take this example further, good next steps could be
+
+- logging
+- auto scaling groups

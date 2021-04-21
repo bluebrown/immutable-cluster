@@ -2,7 +2,7 @@
 
 > Immutable infrastructure is an approach to managing services and software deployments on IT resources wherein components are replaced rather than changed. An application or services is effectively redeployed each time any change occurs.
 
-In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. You can find the full working code in github https://github.com/bluebrown/immutable-cluster.
+In this post I am going to show how one can create a workflow based in the idea of immutable infrastructure. You can find the full working code in github <https://github.com/bluebrown/immutable-cluster>.
 
 ## The Recipe
 
@@ -28,7 +28,7 @@ To follow along you need:
 
 ### Packer File
 
-First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create. 
+First we create a [Packer](https://www.packer.io/) file with some information about the image we want to create.
 
 Most importantly We specify the `region`. By default our `AMI` will only be available in this `region`.
 
@@ -193,7 +193,7 @@ provider "aws" {
 
 ### VPC
 
-First we create a simple `VPC` with 2 `subnets` in different `availability zones`. 
+First we create a simple `VPC` with 2 `subnets` in different `availability zones`.
 
 ```go
 resource "aws_vpc" "packer" {
@@ -253,7 +253,7 @@ resource "aws_subnet" "b" {
 
 ### Security Groups
 
-Next, we create the `security groups`. 
+Next, we create the `security groups`.
 
 The default security group has only a reference to itself. It is used to allow traffic to flow between the `ALB` and its `targets`.
 
@@ -312,14 +312,13 @@ resource "aws_security_group" "web" {
 }
 ```
 
-
 ### Load balancing
 
-Next, an application load balancer (ALB) is created with a `listener`. 
+Next, an application load balancer (ALB) is created with a `listener`.
 
 The `listener` will listen for incoming traffic and forward it to the targets in the `target group`, if the conditions are met. In this case tcp traffic on port 80.
 
-The `target group` will be populated by the `auto scaling group` in the next section. 
+The `target group` will be populated by the `auto scaling group` in the next section.
 
 ```go
 resource "aws_lb" "web" {
@@ -357,12 +356,11 @@ resource "aws_lb_listener" "web" {
 
 ### Autoscaling
 
-Lastly, we create a launch template and auto scaling group to launch new instances of the custom `AMI`. 
+Lastly, we create a launch template and auto scaling group to launch new instances of the custom `AMI`.
 
 We will require a minimum of 2 instances with a desired count of 2 instances. Optionally we allow to scale up to 4 instances if instances reach their resource limit.
 
 The `strategy` of the `placement group` is set to `partition` which means that the instances should get spread across the racks in physical data center.
-
 
 ```go
 resource "aws_placement_group" "web" {
@@ -401,21 +399,19 @@ resource "aws_autoscaling_attachment" "web" {
 }
 ```
 
-
 ## Deploy
 
 Now we can deploy the infrastructure. Run `terraform apply` and confirm the prompt. The process will take a couple minutes until all the resources are created and ready.
 
-```
-$ terraform apply
+```console
+terraform apply
 ```
 
-You can use [AWS CLI](https://aws.amazon.com/cli/) to see if the targets of the load balancer are health. 
+You can use [AWS CLI](https://aws.amazon.com/cli/) to see if the targets of the load balancer are health.
 
 They may not be ready yet. If that is the case, just wait a couple minutes and check again.
 
-
-```bash
+```console
 $ arn=$(aws elbv2 describe-target-groups --name web-tg --query "TargetGroups[0].TargetGroupArn" --output text)
 $ aws elbv2 describe-target-health --target-group-arn "$arn"
 {
@@ -446,7 +442,7 @@ $ aws elbv2 describe-target-health --target-group-arn "$arn"
 
 Once the targets are marked as health we can visit the web page. Lets take the load balancer dns via cli.
 
-```
+```console
 $ echo "http://$(aws elbv2 describe-load-balancers --name "packer-nginx" --query "LoadBalancers[0].DNSName" --output text)"
 http://packer-nginx-266ae005c3577db4.elb.eu-central-1.amazonaws.com
 ```
@@ -457,33 +453,34 @@ You can now visit this url in your browser.
 
 Thats it!
 
-We have deployed our application with high availability across 2 zones and balance the traffic an loadbalancer, targeting instances created from a custom AMI via auto scaling group. 
+We have deployed our application with high availability across 2 zones and balance the traffic an loadbalancer, targeting instances created from a custom AMI via auto scaling group.
 
 Additionally, e have our whole infrastructure as code which we can source control.
 
 ## Cleaning Up
 
-In order to avoid cost, lets remove all created resources. 
+In order to avoid cost, lets remove all created resources.
 
-```
+```console
 terraform destroy
 ```
 
 Since the AMI and snapshot was not created with [Terraform](https://www.terraform.io/), it wont be destroyed by the former command. We are going to remove them via CLI.
 
 ### Deregister Image
-```
+
+```console
 aws ec2 deregister-image --image-id <your-ami-id>
 ```
 
 ### Find the snapshot Id
 
-```
+```console
 aws ec2 describe-snapshots --owner self
 ```
 
 ### Delete snapshot
 
-```bash
+```console
 aws ec2 delete-snapshot --snapshot-id <your-snap-id>
 ```

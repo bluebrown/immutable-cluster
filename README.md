@@ -1,4 +1,4 @@
-# Immutable Infrastructure inAWS with Packer, Ansible and Terraform
+# Immutable Infrastructure in AWS with Packer, Ansible and Terraform
 
 > Immutable infrastructure is an approach to managing services and software deployments on IT resources wherein components are replaced rather than changed. An application or services is effectively redeployed each time any change occurs.
 
@@ -200,7 +200,7 @@ resource "aws_vpc" "packer" {
   cidr_block = "10.0.0.0/16"
   tags = {
     Name        = "packer"
-    Description = "sample vpc with 2 public subnets in 2 availability zones and a network loadblancer for high availability"
+    Description = "sample vpc with 2 public subnets in 2 availability zones and a network load balancer for high availability"
   }
 
 }

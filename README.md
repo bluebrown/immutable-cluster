@@ -193,7 +193,7 @@ provider "aws" {
 
 ### VPC
 
-First we create a `VPC` with 2 `subnets` in different `availability zones`. 
+First we create a simple `VPC` with 2 `subnets` in different `availability zones`. 
 
 ```go
 resource "aws_vpc" "packer" {
@@ -315,7 +315,11 @@ resource "aws_security_group" "web" {
 
 ### Load balancing
 
-Next, an application load balancer (ALB) is created with a listener. This `ALB` will be used by the `auto scaling group` in the next section. 
+Next, an application load balancer (ALB) is created with a `listener`. 
+
+The `listener` will listen for incoming traffic and forward it to the targets in the `target group`, if the conditions are met. In this case tcp traffic on port 80.
+
+The `target group` will be populated by the `auto scaling group` in the next section. 
 
 ```go
 resource "aws_lb" "web" {
@@ -353,7 +357,11 @@ resource "aws_lb_listener" "web" {
 
 ### Autoscaling
 
-Lastly, we create a launch template and auto scaling group to launch new instances of the custom `AMI`.
+Lastly, we create a launch template and auto scaling group to launch new instances of the custom `AMI`. 
+
+We will require a minimum of 2 instances with a desired count of 2 instances. Optionally we allow to scale up to 4 instances if instances reach their resource limit.
+
+The `strategy` of the `placement group` is set to `partition` which means that the instances should get spread across the racks in physical data center.
 
 
 ```go

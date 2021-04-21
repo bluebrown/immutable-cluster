@@ -447,7 +447,11 @@ You can now visit this url in your browser:
 
 ![nginx default web page](https://user-images.githubusercontent.com/39703898/115232775-05dec900-a10f-11eb-9670-fa773436e547.png)
 
-Thats it, we have deployed our application with high availability across 2 zones and balance the traffic with a network loadbalancer. We have our whole infrastructure as code which we can source control.
+Thats it!
+
+We have deployed our application with high availability across 2 zones and balance the traffic an loadbalancer, targeting instances created from a custom AMI via auto scaling group. 
+
+Additionally, e have our whole infrastructure as code which we can source control.
 
 ## Cleaning Up
 

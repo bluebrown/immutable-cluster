@@ -10,6 +10,10 @@ resource "aws_lb" "web" {
     aws_subnet.a.id,
     aws_subnet.b.id
   ]
+  access_logs {
+    bucket  = aws_s3_bucket.logs.id
+    enabled = true
+  }
 }
 
 resource "aws_lb_target_group" "web" {

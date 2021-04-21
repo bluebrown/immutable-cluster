@@ -378,10 +378,18 @@ resource "aws_autoscaling_group" "web" {
   max_size            = 4
   min_size            = 2
   placement_group     = aws_placement_group.web.id
-  target_group_arns   = [aws_lb_target_group.web.arn]
   launch_template {
-    id = aws_launch_template.web.id
+    id      = aws_launch_template.web.id
+    version = "$Latest"
   }
+  lifecycle {
+    ignore_changes = [load_balancers, target_group_arns]
+  }
+}
+
+resource "aws_autoscaling_attachment" "web" {
+  autoscaling_group_name = aws_autoscaling_group.web.id
+  alb_target_group_arn   = aws_lb_target_group.web.arn
 }
 ```
 

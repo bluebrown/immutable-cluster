@@ -559,6 +559,7 @@ linode-cli domains records-create --type CNAME --name elb --target $dns --ttl_se
 You can now visit this url in your browser under your the configured subdomain.
 
 ![nginx default web page](https://user-images.githubusercontent.com/39703898/115831360-64ef5700-a409-11eb-9c8f-5c44fb06be11.png)
+
 Thats it!
 
 The application is deployed from a custom `AMI` across 2 `availability zones` and utilizing `autoscaling`. The traffic is routed via `ELB` which also performs `TLS Termination`.

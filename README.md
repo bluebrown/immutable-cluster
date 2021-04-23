@@ -261,7 +261,7 @@ Next, we create the `security groups`.
 
 The default security group has only a reference to itself. It is used to allow traffic to flow between the `ALB` and its `targets`.
 
-The second `security group` is to allow tcp traffic from the public web to the `ALB` on port 80(HTTP).
+The second `security group` is to allow tcp traffic from the public web to the `ALB` on port 80(HTTP) and 443 (HTTPS).
 
 ```go
 resource "aws_default_security_group" "internal" {

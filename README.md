@@ -399,9 +399,9 @@ The first `listener` will listen on port 80 and redirect the traffic to port 443
 
 The second  `listener` will serve a tls certificate, that is imported from `ACM`, on port 443. After the `TLS handshake` it will forward the traffic over http on port 80 to the target group, also known asl `TLS Termination`.
 
-The `target group` will be populated by the `auto scaling group` in the next section.
+I am assuming that you already have uploaded your own cert or issues one with ACM. There [a branch without tls](https://github.com/bluebrown/immutable-cluster/tree/no-tls) in this repo.
 
-*As the certificate is imported from ACM. So I am assuming that you already have uploaded your own cert of created one with ACM. There [a branch without tls](https://github.com/bluebrown/immutable-cluster/tree/no-tls) in this repo.*
+The `target group` will be populated by the `auto scaling group` in the next section.
 
 ```go
 resource "aws_lb" "web" {
@@ -556,7 +556,7 @@ dns=$(aws elbv2 describe-load-balancers --name "packer-nginx" --query "LoadBalan
 linode-cli domains records-create --type CNAME --name elb --target $dns --ttl_sec 300  <my-domain-id>
 ```
 
-You can now visit this url in your browser under your the configured subdomain.
+You can now visit the url in your browser under your the configured subdomain.
 
 ![nginx default web page](https://user-images.githubusercontent.com/39703898/115831360-64ef5700-a409-11eb-9c8f-5c44fb06be11.png)
 

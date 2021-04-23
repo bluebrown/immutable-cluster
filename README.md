@@ -109,7 +109,7 @@ The playbook tells ansible to install and enable the nginx service. The result w
 
 With the 2 configuration files we can validate the input and build our custom `AMI` in [AWS](https://aws.amazon.com/).
 
-```bash
+```console
 packer validate . 
 packer build .
 ```
@@ -301,6 +301,15 @@ resource "aws_security_group" "web" {
     ipv6_cidr_blocks = ["::/0"]
   }
 
+  ingress {
+    description      = "http traffic"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
   egress {
     from_port        = 0
     to_port          = 0
@@ -380,15 +389,19 @@ resource "aws_s3_bucket_policy" "logs" {
 
 ### Load balancing
 
-Next, an application load balancer (ALB) is created with a `listener`.
+Next, an application load balancer (ALB) is created with a 2 `listeners`.
 
-The `listener` will listen for incoming traffic and forward it to the targets in the `target group`, if the conditions are met. In this case tcp traffic on port 80.
+The first `listener` will listen on port 80 and redirect the traffic to port 443. The
+
+The second  `listener` will serve a tls certificate, that is imported from `ACM`, on port 443. After the `TLS handshake` it will forward the traffic over http on port 80 to the target group, also known asl `TLS Termination`.
 
 The `target group` will be populated by the `auto scaling group` in the next section.
 
+*As the certificate is imported from ACM. So I am assuming that you already have uploaded your own cert of created one with ACM. There [a branch without tls](https://github.com/bluebrown/immutable-cluster/tree/no-tls) in this repo.*
+
 ```go
 resource "aws_lb" "web" {
-  name               = "packer-terraform-example"
+  name               = "packer-nginx"
   internal           = false
   load_balancer_type = "application"
   security_groups = [
@@ -399,6 +412,10 @@ resource "aws_lb" "web" {
     aws_subnet.a.id,
     aws_subnet.b.id
   ]
+  access_logs {
+    bucket  = aws_s3_bucket.logs.id
+    enabled = true
+  }
 }
 
 resource "aws_lb_target_group" "web" {
@@ -413,6 +430,28 @@ resource "aws_lb_listener" "web" {
   load_balancer_arn = aws_lb.web.arn
   port              = "80"
   protocol          = "HTTP"
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+data "aws_acm_certificate" "mycert" {
+  domain   = var.domain
+  statuses = ["ISSUED"]
+  most_recent = true
+}
+
+resource "aws_lb_listener" "websecure" {
+  load_balancer_arn = aws_lb.web.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = data.aws_acm_certificate.mycert.arn
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.web.arn
@@ -506,20 +545,19 @@ $ aws elbv2 describe-target-health --target-group-arn "$arn"
 }
 ```
 
-Once the targets are marked as health we can visit the web page. Lets take the load balancer dns via cli.
+Once the targets are marked as healthy, we need to point a `CNAME record` from our domain to the `ELB DNS`. I am managing my certificate with `Linode`, so I will give an example of how to do it via [linode-cli](https://www.linode.com/docs/guides/linode-cli/).
 
 ```console
-$ echo "http://$(aws elbv2 describe-load-balancers --name "packer-nginx" --query "LoadBalancers[0].DNSName" --output text)"
-http://packer-nginx-266ae005c3577db4.elb.eu-central-1.amazonaws.com
+dns=$(aws elbv2 describe-load-balancers --name "packer-nginx" --query "LoadBalancers[0].DNSName" --output text)
+linode-cli domains records-create --type CNAME --name elb --target $dns --ttl_sec 300  <my-domain-id>
 ```
 
-You can now visit this url in your browser.
+You can now visit this url in your browser under your the configured subdomain.
 
-![nginx default web page](https://user-images.githubusercontent.com/39703898/115232775-05dec900-a10f-11eb-9670-fa773436e547.png)
-
+![nginx default web page](https://user-images.githubusercontent.com/39703898/115831360-64ef5700-a409-11eb-9c8f-5c44fb06be11.png)
 Thats it!
 
-We have deployed our application with high availability across 2 zones and balance the traffic an loadbalancer, targeting instances created from a custom AMI via auto scaling group.
+The application is deployed from a custom `AMI` across 2 `availability zones` and utilizing `autoscaling`. The traffic is routed via `ELB` which also performs `TLS Termination`.
 
 Additionally, e have our whole infrastructure as code which we can source control.
 
@@ -549,4 +587,8 @@ aws ec2 describe-snapshots --owner self
 
 ```console
 aws ec2 delete-snapshot --snapshot-id <your-snap-id>
+```
+
+```console
+linode-cli domains records-delete <main-id> <record-id>
 ```
